@@ -25,7 +25,7 @@
 //~~~~~~~~~~~~~~~~~~~~~
 
 //helper function defs: 
-void create_button(
+int create_button(
     char* text,
     mouse_struct* m_struct, 
     btn_struct* b_struct, 
@@ -52,11 +52,5 @@ int no_of_chars(
 char* format_stringf(
     const char string[], 
     ...
-);
-
-bool rangef(
-    int var, 
-    int min, 
-    int max
 );
 //~~~~~~~~~~~~~~~~~~~~~
