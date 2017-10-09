@@ -1,6 +1,8 @@
 #include "../include/helpers.h"
 
-void create_button(char* text, mouse_struct* m_struct, btn_struct* b_struct, 
+bool isPressed, wasPressed = false;
+
+int create_button(char* text, mouse_struct* m_struct, btn_struct* b_struct, 
 float border, size_t* rgb, size_t* rgb2, int type) {
 
     size_t r = rgb[0], g = rgb[1], b = rgb[2];
@@ -13,6 +15,11 @@ float border, size_t* rgb, size_t* rgb2, int type) {
     int y = m_struct->mouse_pos[1];
     int ac = 0, bc = 0;
 
+    bool mouse_in_button = 
+        (rangem(x, (x1-border), (x2+border)) && 
+         rangem(y, (y1-border), (y2+border))) ?
+            true : false;
+
     ALLEGRO_COLOR acolor, bcolor;
 
     if (border < 0)
@@ -21,27 +28,49 @@ float border, size_t* rgb, size_t* rgb2, int type) {
     if (r > 255 || g > 255 || b > 255)
         ERROR_FAILED("load rgb values, not within 0-255")
 
-    if (rangem(x, (x1-border), (x2+border)) && rangem(y, (y1-border), (y2+border))) {
-        acolor = al_map_rgb(r2, g2, b2);
-
-        if ((r-40) < 255 || (g-40) < 255 || (b-40) < 255) {
-            bcolor = al_map_rgb(r2-20, g2-20, b2-20);
-        }
-        else {
-            bcolor = al_map_rgb(r2-40, g2-40, b2-40);
-        }
+    if (mouse_in_button) {
 
         if (m_struct->mouse_state) {
-            switch(type){
+            switch (type) {
+
                 case 0: 
-                    GAME_STATE = b_struct->state_id+1; //changes stages of screen
+                    isPressed = true;
+                    wasPressed = false;
+                    r2 -= 30, g2 -= 30, b2 -= 30;
                     break;
+
                 case 1:
-                    check_button_battle(b_struct->state_id); //makes button do things onscreen
+                    //makes button do things onscreen
+                    check_button_battle(b_struct->state_id); 
                     break;
             }
         }
+
+        // printf(
+        //     "%d|%s|%s\n", type, 
+        //     (isPressed)  ? "True":"False",
+        //     (wasPressed) ? "True":"False"
+        // );
+
+        if (wasPressed) {
+            GAME_STATE = b_struct->state_id+1; //changes stages of screen
+            wasPressed = false;
+            return 0;
+        }
+
+        if (isPressed) {
+            isPressed = false;
+            wasPressed = true;
+        }
+
+        unsigned int offset = 
+            ((r-40) < 255 || (g-40) < 255 || (b-40) < 255) ? 20:40;
+
+        acolor = al_map_rgb(r2, g2, b2);
+        bcolor = al_map_rgb(r2-offset, g2-offset, b2-offset);
+
     }
+
     else {
         acolor = al_map_rgb(r, g, b);
         bcolor = al_map_rgb(r2, g2, b2);
@@ -58,6 +87,8 @@ float border, size_t* rgb, size_t* rgb2, int type) {
         ALLEGRO_ALIGN_LEFT, 
         text
     );
+
+    return 0;
 }
 
 void render_map(char* file_data, int tile_wh[2], int map_xy[2], 
@@ -108,12 +139,14 @@ char* format_stringf(const char string[], ...) {
 char* get_file_data(char* file_path) {
 
     FILE* file_pointer = fopen(file_path, "r");
-    if (!file_pointer) exit(EXIT_FAILURE);
+    if (!file_pointer) ERROR_FAILED(format_stringf("get file data of %s", file_path))
 
     int noc = no_of_chars(file_pointer);
     char* file_data = calloc(noc, 1);
 
-    fread(file_data, noc+1, 1, file_pointer);
+    size_t file_read_success = fread(file_data, 1, noc+1, file_pointer);
+    if (!file_read_success) {ERROR_FAILED("read file")}
+    
     fclose(file_pointer);
 
     return file_data;
